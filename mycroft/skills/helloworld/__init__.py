@@ -48,10 +48,10 @@ class HelloWorldSkill(MycroftSkill):
         self.register_intent(hello_world_intent,
                              self.handle_hello_world_intent)
 
-	greet_prof_intent = IntentBuilder("GreetProfIntent").\
-		require("GreetProfKeyword").build()
-	self.register_intent(greet_prof_intent,
-				self.handle_greet_prof_intent)
+		greet_prof_intent = IntentBuilder("GreetProfIntent").\
+			require("GreetProfKeyword").build()
+		self.register_intent(greet_prof_intent,
+							self.handle_greet_prof_intent)
 
     def handle_thank_you_intent(self, message):
         self.speak_dialog("welcome")
