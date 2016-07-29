@@ -1,0 +1,7 @@
+{
+	"utterance": "Move left",
+	"intent_type": "MoveMinecraftIntent",
+	"intent": {
+		"MoveKeyword": "move left"
+	}
+}

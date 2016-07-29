@@ -1,0 +1,7 @@
+{
+  "utterance": "i'd like to introduce you to my professor",
+  "intent_type": "GreetProfIntent",
+  "intent": {
+    "GreetProfKeyword": "i like to introduce you to my professor"
+  }
+}
