@@ -24,6 +24,8 @@ import os
 import serial
 import time
 
+import threading
+
 from mycroft.client.enclosure.arduino import EnclosureArduino
 from mycroft.client.enclosure.eyes import EnclosureEyes
 from mycroft.client.enclosure.mouth import EnclosureMouth
@@ -100,14 +102,40 @@ class EnclosureReader(Thread):
             mixer.setvolume(35)
             self.client.emit(Message("speak", metadata={
                 'utterance': "I am testing one two three"}))
-            record("/tmp/test.wav", 3.5)
+
+            time.sleep(0.5)  # Prevents recording the loud button press
+            record("/tmp/test.wav", 3.0)
+            mixer.setvolume(prev_vol)
             play_wav("/tmp/test.wav")
+            time.sleep(3.5)  # Pause between tests so it's not so fast
 
             # Test audio muting on arduino
-            self.client.emit(Message("speak", metadata={
-                'utterance': "LOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOONG"}))
+            subprocess.call('speaker-test -P 10 -l 0 -s 1', shell=True)
 
-            mixer.setvolume(prev_vol)
+        if "unit.shutdown" in data:
+            self.client.emit(
+                Message("enclosure.eyes.timedspin",
+                        metadata={'length': 12000}))
+            self.client.emit(Message("enclosure.mouth.reset"))
+            subprocess.call('systemctl poweroff -i', shell=True)
+
+        if "unit.reboot" in data:
+            self.client.emit(
+                Message("enclosure.eyes.spin"))
+            self.client.emit(Message("enclosure.mouth.reset"))
+            subprocess.call('systemctl reboot -i', shell=True)
+
+        if "unit.setwifi" in data:
+            self.client.emit(Message("wifisetup.start"))
+
+        if "unit.factory-reset" in data:
+            subprocess.call(
+                'rm ~/.mycroft/identity/identity.json',
+                shell=True)
+            self.client.emit(
+                Message("enclosure.eyes.spin"))
+            self.client.emit(Message("enclosure.mouth.reset"))
+            subprocess.call('systemctl reboot -i', shell=True)
 
     def stop(self):
         self.alive = False
@@ -186,12 +214,21 @@ class Enclosure:
         must_upload = self.config.get('must_upload')
         if must_upload is not None and str2bool(must_upload):
             ConfigurationManager.set('enclosure', 'must_upload', False)
+            time.sleep(5)
+            self.client.emit(Message("speak", metadata={
+                'utterance': "I am currently uploading to the arduino."}))
+            self.client.emit(Message("speak", metadata={
+                'utterance': "I will be finished in just a moment."}))
             self.upload_hex()
+            self.client.emit(Message("speak", metadata={
+                'utterance': "Arduino programing complete."}))
 
         must_start_test = self.config.get('must_start_test')
         if must_start_test is not None and str2bool(must_start_test):
             ConfigurationManager.set('enclosure', 'must_start_test', False)
             time.sleep(0.5)  # Ensure arduino has booted
+            self.client.emit(Message("speak", metadata={
+                'utterance': "Begining hardware self test."}))
             self.writer.write("test.begin")
 
     @staticmethod
@@ -269,8 +306,10 @@ class Enclosure:
 def main():
     try:
         enclosure = Enclosure()
+        t = threading.Thread(target=enclosure.run)
+        t.start()
         enclosure.setup()
-        enclosure.run()
+        t.join()
     except Exception as e:
         print(e)
     finally:
