@@ -1,5 +1,5 @@
 import time
-from pykeyboard import PyKeyboard
+#from pykeyboard import PyKeyboard
 from os.path import dirname
 
 from adapt.intent import IntentBuilder
@@ -20,8 +20,8 @@ class ControlMinecraftSkill(MycroftSkill):
 
     def handle_move_minecraft_intent(self, message):
         self.speak_dialog("move.feedback")
-        k = PyKeyboard()        
-        k.tap_key('R')
+        #k = PyKeyboard()        
+        #k.tap_key('R')
 
     def stop(self):
         pass
